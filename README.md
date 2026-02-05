@@ -234,5 +234,15 @@ After processing, you'll see:
 - **Audio Conversion**: FFmpeg, pydub
 
 ---
+---
+
+## 👥 Team
+
+- **Alhussien Ayman**   
+- **[Mohamed Elsayyed Attallah]**
+- **[Abdullah Khalefa]**  
+- **[Ahmed Elshinawy]**  
+> Built with ❤️ as a collaborative project
+
 
 
