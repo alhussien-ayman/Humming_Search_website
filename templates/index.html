@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HumSearch - Melody Recognition</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Full Screen Styles */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Results Styles */
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .similarity-badge {
+            background: linear-gradient(135deg, #ef3f65, #ff6b8b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .song-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .song-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .match-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        
+        .play-btn, .youtube-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .play-btn {
+            background: #ef3f65;
+            color: white;
+        }
+        
+        .play-btn:hover {
+            background: #ff527a;
+        }
+        
+        .youtube-btn {
+            background: #ff0000;
+            color: white;
+        }
+        
+        .youtube-btn:hover {
+            background: #dc2626;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            margin: 0 auto 20px;
+            width: 50px;
+            height: 50px;
+        }
+        
+        .processing-text {
+            color: #ef3f65;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .results-container {
+            margin-top: 30px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .results-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .no-results svg {
+            margin-bottom: 15px;
+            color: #9ca3af;
+        }
+        
+        .no-results h4 {
+            color: #4b5563;
+            margin-bottom: 8px;
+        }
+        
+        .no-results p {
+            color: #6b7280;
+            margin-bottom: 0;
+        }
+        
+        /* Analysis Section */
+        .analysis-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        
+        .analysis-section.active {
+            display: block;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .analysis-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ef3f65;
+        }
+        
+        .analysis-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .analysis-value {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        /* Match Buttons */
+        .match-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .match-btn {
+            background: linear-gradient(135deg, #ef3f65 0%, #ff6b8b 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(239, 63, 101, 0.2);
+        }
+        
+        .match-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 63, 101, 0.3);
+        }
+        
+        .match-btn:active {
+            transform: translateY(0);
+        }
+        
+        .match-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .match-btn:nth-child(2) {
+            background: linear-gradient(135deg, #091128 0%, #1a2a4a 100%);
+        }
+        
+        .match-btn:nth-child(3) {
+            background: linear-gradient(135deg, #1a2a4a 0%, #2a3a5a 100%);
+        }
+        
+        .match-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .match-section h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background: rgba(239, 63, 101, 0.1);
+            color: #ef3f65;
+            border: 1px solid rgba(239, 63, 101, 0.3);
+        }
+        
+        .status-error {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+        
+        .status-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Logo with Image */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid #ef3f65;
+        }
+
+        .logo-text h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ef3f65, #ff6b8b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .logo-text .tagline {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        /* Recording Icon Enhancement */
+        .record-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .record-icon i {
+            font-size: 24px;
+        }
+
+        .record-btn.recording .record-icon::before {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: rgba(239, 63, 101, 0.2);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Enhanced upload icon */
+        .upload-icon {
+            position: relative;
+        }
+
+        .upload-icon i {
+            font-size: 24px;
+        }
+
+        /* Mode toggle enhancements */
+        .toggle-btn.active i {
+            color: #ef3f65;
+        }
+
+        /* Header actions */
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Visualizer for recording */
+        .visualizer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 40px;
+            margin: 15px 0;
+        }
+
+        .bar {
+            width: 4px;
+            background: #ef3f65;
+            border-radius: 2px;
+            animation: equalizer 1.5s ease infinite;
+        }
+
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        .bar:nth-child(6) { animation-delay: 0.5s; }
+
+        @keyframes equalizer {
+            0%, 100% { height: 10px; }
+            50% { height: 30px; }
+        }
+
+        /* Full screen layout */
+        .full-screen-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #091128;
+        }
+
+        .main-content-wrapper {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        /* Content scroll area */
+        .scroll-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        /* Header with logo path */
+        .header-with-path {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-path {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .logo-path i {
+            color: #ef3f65;
+            font-size: 12px;
+        }
+
+        .logo-path span {
+            color: white;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ef3f65;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff6b8b;
+        }
+
+        /* Animation for content */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-fade-in {
+            animation: fadeInUp 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="full-screen-container">
+        <!-- Header with Logo Path -->
+        <div class="header-with-path">
+            <div class="logo-container" class>
+                <!-- Replace with your logo image path -->
+                 <img src="static\LOGO.png"  class="logo">
+                <div class="logo-text">
+                    <h1>HumSearch</h1>
+                    <p class="tagline">Find songs by humming or uploading audio</p>
+                </div>
+            </div>
+            
+            <div class="logo-path">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+                <i class="fas fa-chevron-right"></i>
+                <span id="currentPath">Record Mode</span>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content-wrapper">
+            <div class="scroll-content">
+                <!-- Mode Toggle -->
+                <div class="mode-toggle">
+                    <button class="toggle-btn active" id="recordModeBtn">
+                        <div class="record-icon">
+                            <i class="fas fa-microphone"></i>
+                        </div>
+                        Record Audio
+                    </button>
+                    <button class="toggle-btn" id="uploadModeBtn">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        Upload Audio
+                    </button>
+                </div>
+
+                <div class="content-area">
+                    <!-- Record Mode -->
+                    <div class="mode-content active content-fade-in" id="recordMode">
+                        <div class="input-section">
+                            <h2>Record Your Melody</h2>
+                            <p class="description">Hum or sing a part of a song to find matches</p>
+
+                            <!-- Duration Selector -->
+                            <div class="duration-selector">
+                                <label for="duration">Recording Duration:</label>
+                                <select id="duration" class="duration-select">
+                                    <option value="5">5 seconds</option>
+                                    <option value="10" selected>10 seconds</option>
+                                    <option value="15">15 seconds</option>
+                                    <option value="20">20 seconds</option>
+                                    <option value="30">30 seconds</option>
+                                </select>
+                            </div>
+
+                            <!-- Record Controls -->
+                            <div class="record-controls">
+                                <button class="record-btn" id="recordBtn">
+                                    <div class="record-icon">
+                                        <i class="fas fa-microphone"></i>
+                                    </div>
+                                    <span>Start Recording</span>
+                                </button>
+                                <div class="visualizer" id="visualizer" style="display: none;">
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                </div>
+                                <div class="timer" id="timer">00:00</div>
+                            </div>
+
+                            <!-- Audio Player -->
+                            <div class="audio-player hidden" id="recordedAudioPlayer">
+                                <div class="player-header">
+                                    <i class="fas fa-headphones"></i>
+                                    <span>Recorded Audio</span>
+                                </div>
+                                <audio controls id="recordedAudio"></audio>
+                            </div>
+
+                            <!-- Status Message -->
+                            <div id="recordStatus" class="status-message hidden"></div>
+
+                            <!-- Match Button -->
+                            <div class="match-section hidden" id="recordMatchSection">
+                                <h3>Ready to Find Matches?</h3>
+                                <div class="match-buttons">
+                                    <button class="match-btn" id="findMatchesBtn">
+                                        <i class="fas fa-search"></i>
+                                        <span>Find Matching Songs</span>
+                                    </button>
+                                    <button class="match-btn" id="tryAgainBtn">
+                                        <i class="fas fa-redo"></i>
+                                        <span>Record Again</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Mode -->
+                    <div class="mode-content content-fade-in" id="uploadMode">
+                        <div class="input-section">
+                            <h2>Upload Audio File</h2>
+                            <p class="description">Upload an audio file of your humming or singing</p>
+
+                            <!-- File Upload -->
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <p>Click to upload or drag and drop</p>
+                                <p class="file-types">MP3, WAV, OGG, M4A (Max 10MB)</p>
+                                <input type="file" id="audioFileInput" accept="audio/*" hidden>
+                            </div>
+
+                            <!-- Audio Player -->
+                            <div class="audio-player hidden" id="uploadedAudioPlayer">
+                                <div class="player-header">
+                                    <i class="fas fa-headphones"></i>
+                                    <span id="uploadedFileName">Uploaded Audio</span>
+                                </div>
+                                <audio controls id="uploadedAudio"></audio>
+                            </div>
+
+                            <!-- Status Message -->
+                            <div id="uploadStatus" class="status-message hidden"></div>
+
+                            <!-- Match Button -->
+                            <div class="match-section hidden" id="uploadMatchSection">
+                                <h3>Ready to Find Matches?</h3>
+                                <div class="match-buttons">
+                                    <button class="match-btn" id="uploadFindMatchesBtn">
+                                        <i class="fas fa-search"></i>
+                                        <span>Find Matching Songs</span>
+                                    </button>
+                                    <button class="match-btn" id="uploadTryAgainBtn">
+                                        <i class="fas fa-redo"></i>
+                                        <span>Upload Another</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner">
+                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                                <circle cx="25" cy="25" r="20" stroke="#2a3a5a" stroke-width="5"/>
+                                <circle cx="25" cy="25" r="20" stroke="#ef3f65" stroke-width="5" stroke-linecap="round"
+                                        stroke-dasharray="31.4 31.4" stroke-dashoffset="31.4">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25"
+                                                    dur="1s" repeatCount="indefinite"/>
+                                </circle>
+                            </svg>
+                        </div>
+                        <p class="processing-text">Processing audio and finding matches...</p>
+                    </div>
+
+                    <!-- Analysis Section -->
+                    <div class="analysis-section" id="analysisSection">
+                        <h3>Audio Analysis</h3>
+                        <div class="analysis-grid" id="analysisGrid">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="results-container" id="resultsSection">
+                        <h3>Top Matches</h3>
+                        <div id="resultsList"></div>
+                        
+                        <!-- No Results Message -->
+                        <div class="no-results hidden" id="noResults">
+                            <i class="fas fa-search" style="font-size: 64px; color: #9ca3af;"></i>
+                            <h4>No Matches Found</h4>
+                            <p>Try recording a clearer melody or upload a different audio file.</p>
+                        </div>
+                    </div>
+                </div>
+
+               
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

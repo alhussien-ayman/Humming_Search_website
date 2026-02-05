@@ -1,0 +1,7 @@
+librosa
+numpy
+pydub
+scipy
+soundfile
+audioread
+pyaudio
