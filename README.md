@@ -22,7 +22,7 @@
 <br/>
 
 <p align="center" style="display:flex; align-items:flex-start; gap:10px;">
-  <img src="media/photos/photos/Screen-02.png" alt="HumSearch Interface" width="53%" />
+  <img src="media/photos/photos/Screen-02.png" alt="HumSearch Interface" width="55%" />
   <img src="media/photos/photos/Screen-01.png" alt="HumSearch Results" width="30%" />
 </p>>
 
@@ -243,6 +243,7 @@ After processing, you'll see:
 - **Abdullah Khalefa**  
 - **Ahmed Elshinawy**  
 > Built with ❤️ as a collaborative project
+
 
 
 
