@@ -21,10 +21,10 @@
 
 <br/>
 
-<p align="center">
+<p align="center" style="display:flex; align-items:flex-start; gap:10px;">
   <img src="media/photos/photos/Screen-01.png" alt="HumSearch Interface" width="45%" />
   <img src="media/photos/photos/Screen-02.png" alt="HumSearch Results" width="45%" />
-</p>
+</p>>
 
 </div>
 
@@ -234,3 +234,4 @@ After processing, you'll see:
 - **Audio Conversion**: FFmpeg, pydub
 
 ---
+
