@@ -239,10 +239,11 @@ After processing, you'll see:
 ## 👥 Team
 
 - **Alhussien Ayman**   
-- **[Mohamed Elsayyed Attallah]**
-- **[Abdullah Khalefa]**  
-- **[Ahmed Elshinawy]**  
+- **Mohamed Elsayyed Attallah**
+- **Abdullah Khalefa**  
+- **Ahmed Elshinawy**  
 > Built with ❤️ as a collaborative project
+
 
 
 
